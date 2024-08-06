@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hamster Bike Keygen</title>
+    <style>
+        body {
+            font-family: monospace;
+            background-color: #000;
+            color: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        #container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        button {
+            font-size: 1.5em;
+            margin: 10px;
+        }
+        #promoLink {
+            color: lime;
+            text-shadow: black 0 0 3px;
+            position: absolute;
+            left: 10px;
+            top: 10px;
+        }
+    </style>
+    
+    <link rel="manifest" href="manifest.json">
+<script>
+  if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js')
+      .then(function() {
+          console.log('Service Worker Registered');
+      });
+  }
+</script>
+    
+</head>
+<body>
+    <div id="container">
+        <div id="keyText">⏳⏳⏳</div>
+        <div id="pointsText"></div>
+        <div id="buttons">
+            <button id="startBtn">▶️</button>
+        </div>
+        <a id="promoLink" href="https://georg95.github.io/bike-keygen.html" target="_blank">georg95.github.io/bike-keygen.html</a>
+    </div>
+    <script>
+        // الكود JavaScript هنا
+        const APP_TOKEN = 'd28721be-fd2d-4b45-869e-9f253b554e50';
+        const PROMO_ID = '43e35910-c168-4634-ad4f-52fd764a843f';
+        const DEBUG_MODE = false;
+        const EVENTS_DELAY = DEBUG_MODE ? 350 : 20000;
+        const PARAMS = new URL(location.href).searchParams;
+        const USER_ID = PARAMS.get('id');
+        const USER = PARAMS.get('user');
+        const HASH = PARAMS.get('hash');
+
+        document.addEventListener('DOMContentLoaded', () => {
+            start();
+        });
+
+        function start() {
+            const { startBtn, keyText, pointsText, copyBtn, nextBtn, buttons } = createLayout();
+
+            let farmedKeys = 0;
+            pointsText.innerText = `@${USER}: +💎0`;
+            const keyTextOriginalSize = keyText.style.fontSize;
+
+            function runAgain() {
+                keyText.style.fontSize = keyTextOriginalSize;
+                keygen().catch(onKeygenFail);
+            }
+
+            nextBtn.onclick = () => {
+                runAgain();
+                buttons.removeChild(nextBtn);
+            };
+
+            async function keygen() {
+                keyText.innerText = '⏳⏳⏳';
+                const token = await login(generateClientId());
+                const progressDelay = initProgress(keyText);
+                for (let i = 0; i < 7; i++) {
+                    await progressDelay(i >= 5);
+                    const hasCode = await emulateProgess(token);
+                    if (hasCode) {
+                        break;
+                    }
+                }
+                await progressDelay();
+                const key = await generateKey(token);
+                if (USER_ID) {
+                    const { status, points } = await commitKey(key);
+                    if (status !== 'ok') {
+                        keyText.innerText = `⛔ ${status}`;
+                        buttons.appendChild(startBtn);
+                        return;
+                    }
+                    farmedKeys++;
+                    pointsText.innerText = `@${USER}: +💎${points * farmedKeys}`;
+                    keyText.innerText = `⏳ ${EVENTS_DELAY / 1000}s`;
+                    await sleep(EVENTS_DELAY * delayRandom());
+                    runAgain();
+                    return;
+                }
+                keyText.innerText = key;
+                copyBtn.onclick = () => {
+                    navigator.clipboard.writeText(key);
+                    const copyBtnDefaultText = copyBtn.innerText;
+                    copyBtn.innerText = '✅';
+                    setTimeout(() => copyBtn.innerText = copyBtnDefaultText, 1500);
+                };
+
+                buttons.innerHTML = '';
+                buttons.appendChild(copyBtn);
+                buttons.appendChild(nextBtn);
+            }
+
+            async function onKeygenFail(e) {
+                keyText.style.fontSize = '12px';
+                keyText.innerText = e.toString() + '\nRestart in 20s...';
+                buttons.innerHTML = '';
+                if (USER_ID) {
+                    await sleep(EVENTS_DELAY * delayRandom());
+                    runAgain();
+                    return;
+                }
+                buttons.appendChild(nextBtn);
+            }
+
+            startBtn.onclick = () => {
+                buttons.innerHTML = '';
+                keygen().catch(onKeygenFail);
+            };
+        }
+
+        function createLayout() {
+            const container = document.getElementById('container');
+            const keyText = document.getElementById('keyText');
+            const pointsText = document.getElementById('pointsText');
+            const buttons = document.getElementById('buttons');
+            const copyBtn = document.createElement('button');
+            const nextBtn = document.createElement('button');
+            const startBtn = document.getElementById('startBtn');
+
+            copyBtn.innerText = '📋';
+            nextBtn.innerText = '↻';
+
+            buttons.appendChild(startBtn);
+
+            return { keyText, pointsText, startBtn, copyBtn, nextBtn, buttons };
+        }
+
+        function delayRandom() {
+            return (Math.random() / 3 + 1);
+        }
+
+        async function login(clientId) {
+            if (!clientId) { throw new Error('no client id'); }
+            if (DEBUG_MODE) {
+                return 'd28721be-fd2d-4b45-869e-9f253b554e50:deviceid:1722266117413-8779883520062908680:8B5BnSuEV2W:' + Date.now();
+            }
+            const { clientToken } = await vmFetch('https://api.gamepromo.io/promo/login-client', {
+                headers: {
+                    'content-type': 'application/json; charset=utf-8',
+                    'Host': 'api.gamepromo.io'
+                },
+                method: 'POST',
+                body: {
+                    appToken: APP_TOKEN,
+                    clientId: clientId,
+                    clientOrigin: 'deviceid'
+                }
+            });
+            return clientToken;
+        }
+
+        const attempts = {};
+        async function emulateProgess(clientToken) {
+            if (!clientToken) { throw new Error('no access token'); }
+            if (DEBUG_MODE) {
+                attempts[clientToken] = (attempts[clientToken] || 0) + 1;
+                return attempts[clientToken] >= 5;
+            }
+            const { hasCode } = await vmFetch('https://api.gamepromo.io/promo/register-event', {
+                headers: {
+                    'content-type': 'application/json; charset=utf-8',
+                    'Host': 'api.gamepromo.io',
+                    'Authorization': `Bearer ${clientToken}`
+                },
+                method: 'POST',
+                body: {
+                    promoId: PROMO_ID,
+                    eventId: crypto.randomUUID(),
+                    eventOrigin: 'undefined'
+                }
+            });
+            return hasCode;
+        }
+
+        async function generateKey(clientToken) {
+            if (DEBUG_MODE) {
+                if (attempts[clientToken] >= 5) {
+                    return 'TRAIN-0KT-R4Z3-0NWK-P3Y';
+                } else {
+                    return '';
+                }
+            }
+            const { promoCode } = await vmFetch('https://api.gamepromo.io/promo/create-code', {
+                headers: {
+                    'content-type': 'application/json; charset=utf-8',
+                    'Host': 'api.gamepromo.io',
+                    'Authorization': `Bearer ${clientToken}`
+                },
+                method: 'POST',
+                body: {
+                    promoId: PROMO_ID
+                }
+            });
+            return promoCode;
+        }
+
+        async function vmFetch(url, options) {
+            return new Promise((resolve, reject) => {
+                const xhr = new XMLHttpRequest();
+                xhr.open(options.method, url, true);
+                for (const header in options.headers) {
+                    xhr.setRequestHeader(header, options.headers[header]);
+                }
+                xhr.onreadystatechange = function() {
+                    if (xhr.readyState === 4) {
+                        if (xhr.status >= 200 && xhr.status < 300) {
+                            resolve(JSON.parse(xhr.responseText));
+                        } else {
+                            reject(xhr.responseText || 'No internet?');
+                        }
+                    }
+                };
+                xhr.send(typeof options.body === 'string' ? options.body : JSON.stringify(options.body));
+            });
+        }
+
+        async function sleep(ms) {
+            return new Promise(res => setTimeout(res, ms));
+        }
+
+        function generateClientId() {
+            const timestamp = Date.now();
+            const randomNumbers = Array.from({ length: 19 }, () => Math.floor(Math.random() * 10)).join('');
+            return `${timestamp}-${randomNumbers}`;
+        }
+
+        function initProgress(keyText) {
+            const delays = 6;
+            const progressPerDelay = 20;
+            let totalProgress = progressPerDelay * delays;
+            let emojiFlip = false;
+            keyText.innerText = `${emojiFlip ? '⏳' : '⌛'}0%`;
+            let curProgress = 
